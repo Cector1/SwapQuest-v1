@@ -451,7 +451,7 @@ export function useWorldCoin() {
     }
   }
 
-  // Execute real swap using WorldCoin MiniKit - SIMPLIFIED APPROACH
+  // Execute REAL token swap using WorldCoin MiniKit - ACTUAL SWAP NOT PAYMENT
   const executeSwap = async (params: {
     tokenIn: string
     tokenOut: string
@@ -465,113 +465,123 @@ export function useWorldCoin() {
     }
 
     try {
-      console.log('🔄 Executing REAL swap via WorldCoin MiniKit (simplified approach)...', params)
+      console.log('🔄 Executing REAL TOKEN SWAP (not payment)...', params)
       
-      // Convert token addresses to MiniKit token symbols for validation
-      const getTokenSymbol = (address: string): string => {
-        const tokenMap: Record<string, string> = {
-          '0x0000000000000000000000000000000000000000': 'ETH',
-          '0x4200000000000000000000000000000000000006': 'WETH', 
-          '0x163f8C2467924be0ae7B5347228CABF260318753': 'WLD',
-          '0x79A02482A880bCE3F13e09Da970dC34db4CD24d1': 'USDC'
-        }
-        return tokenMap[address] || 'UNKNOWN'
+      // Convert token addresses to proper format
+      const tokenInAddress = params.tokenIn === '0x0000000000000000000000000000000000000000' 
+        ? '0x4200000000000000000000000000000000000006' // Use WETH for ETH
+        : params.tokenIn
+      
+      const tokenOutAddress = params.tokenOut === '0x0000000000000000000000000000000000000000'
+        ? '0x4200000000000000000000000000000000000006' // Use WETH for ETH  
+        : params.tokenOut
+
+      // Convert amounts to BigInt and then hex
+      const amountInBigInt = BigInt(params.amountIn)
+      const amountOutMinBigInt = BigInt(params.amountOutMinimum)
+      const feeBigInt = BigInt(params.fee)
+      const deadlineBigInt = BigInt(Math.floor(Date.now() / 1000) + 1200) // 20 minutes
+
+      console.log('🔄 REAL Swap parameters:', {
+        tokenIn: tokenInAddress,
+        tokenOut: tokenOutAddress,
+        amountIn: amountInBigInt.toString(),
+        amountOutMinimum: amountOutMinBigInt.toString(),
+        fee: feeBigInt.toString(),
+        deadline: deadlineBigInt.toString(),
+        recipient: params.recipient || state.userAddress
+      })
+
+      // Use World Chain Uniswap V3 Router for REAL swaps
+      const uniswapV3Router = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
+      
+      // Create the swap transaction data with hex values
+      const swapParams = {
+        tokenIn: tokenInAddress,
+        tokenOut: tokenOutAddress,
+        fee: '0x' + feeBigInt.toString(16),
+        recipient: params.recipient || state.userAddress,
+        deadline: '0x' + deadlineBigInt.toString(16),
+        amountIn: '0x' + amountInBigInt.toString(16),
+        amountOutMinimum: '0x' + amountOutMinBigInt.toString(16),
+        sqrtPriceLimitX96: '0x0'
       }
 
-      const fromTokenSymbol = getTokenSymbol(params.tokenIn)
-      const toTokenSymbol = getTokenSymbol(params.tokenOut)
-      
-      console.log('🔄 Swap details:', { 
-        fromToken: fromTokenSymbol, 
-        toToken: toTokenSymbol, 
-        amountIn: params.amountIn,
-        fromAddress: params.tokenIn,
-        toAddress: params.tokenOut
+      console.log('🔄 Calling Uniswap V3 exactInputSingle with params:', swapParams)
+
+      // Execute REAL swap transaction
+      const swapResult = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: uniswapV3Router,
+          abi: [
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {"name": "tokenIn", "type": "address"},
+                    {"name": "tokenOut", "type": "address"}, 
+                    {"name": "fee", "type": "uint24"},
+                    {"name": "recipient", "type": "address"},
+                    {"name": "deadline", "type": "uint256"},
+                    {"name": "amountIn", "type": "uint256"},
+                    {"name": "amountOutMinimum", "type": "uint256"},
+                    {"name": "sqrtPriceLimitX96", "type": "uint160"}
+                  ],
+                  "name": "params",
+                  "type": "tuple"
+                }
+              ],
+              "name": "exactInputSingle",
+              "outputs": [{"name": "amountOut", "type": "uint256"}],
+              "stateMutability": "payable",
+              "type": "function"
+            }
+          ],
+          functionName: 'exactInputSingle',
+          args: [swapParams],
+          value: params.tokenIn === '0x0000000000000000000000000000000000000000' ? '0x' + amountInBigInt.toString(16) : '0x0'
+        }]
       })
 
-      // For now, let's use a simplified approach that MiniKit can handle
-      // We'll use the pay command to simulate the swap by sending the input token
-      // This is a temporary solution until we can implement proper DEX integration
-      
-      // Convert amount to proper token format
-      const getTokenForMiniKit = (symbol: string) => {
-        switch (symbol) {
-          case 'WLD': return Tokens.WLD
-          case 'USDC': return Tokens.USDCE // Use USDC.e for World Chain
-          case 'ETH':
-          case 'WETH': return Tokens.WLD // Fallback to WLD for now
-          default: return Tokens.WLD
-        }
-      }
-
-      const inputToken = getTokenForMiniKit(fromTokenSymbol)
-      
-      // Calculate token amount in proper decimals
-      const tokenDecimals = fromTokenSymbol === 'USDC' ? 6 : 18
-      const amountInTokens = parseFloat(params.amountIn) / Math.pow(10, tokenDecimals)
-      const tokenAmount = tokenToDecimals(amountInTokens, inputToken).toString()
-      
-      console.log('🔄 Token conversion:', {
-        symbol: fromTokenSymbol,
-        decimals: tokenDecimals,
-        amountInWei: params.amountIn,
-        amountInTokens: amountInTokens,
-        tokenAmount: tokenAmount
-      })
-
-      // Create a unique reference for this swap
-      const swapReference = `swap_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      
-      // Use MiniKit pay command as a swap simulation
-      // In a real implementation, this would interact with a DEX
-      const swapResult = await MiniKit.commandsAsync.pay({
-        reference: swapReference,
-        to: '0x742d35Cc6634C0532925a3b8D20Eb0d8f4C2f35f', // SwapQuest treasury address
-        tokens: [{
-          symbol: inputToken,
-          token_amount: tokenAmount
-        }],
-        description: `Swap ${amountInTokens.toFixed(6)} ${fromTokenSymbol} to ${toTokenSymbol} via SwapQuest`
-      })
-
-      console.log('📤 Swap transaction result:', swapResult)
+      console.log('📤 REAL Swap transaction result:', swapResult)
 
       if (swapResult.finalPayload.status === 'success') {
-        console.log('✅ Swap transaction completed successfully!')
-        
-        // In a real implementation, we would:
-        // 1. Send the input tokens to a DEX contract
-        // 2. Execute the actual swap
-        // 3. Return the output tokens to the user
-        // For now, we're simulating this with a payment
+        console.log('✅ REAL TOKEN SWAP COMPLETED! Tokens exchanged successfully!')
+        console.log('💰 Your balance should now reflect the swapped tokens')
         
         return {
           success: true,
           transactionHash: swapResult.finalPayload.transaction_id,
           swapParams: params,
-          reference: swapReference,
-          note: 'Swap executed via simplified payment method'
+          type: 'REAL_SWAP',
+          note: 'Real token swap executed - balances changed!'
         }
       } else {
-        throw new Error(`Swap transaction failed: ${swapResult.finalPayload.status}`)
+        throw new Error(`Real swap failed: ${swapResult.finalPayload.status}`)
       }
     } catch (error) {
-      console.error('❌ Swap execution failed:', error)
+      console.error('❌ REAL Token swap failed:', error)
       
-      // Provide more specific error messages
+      // Handle specific swap errors
       if (error instanceof Error) {
-        if (error.message.includes('insufficient')) {
-          throw new Error(`Fondos insuficientes para el swap. Necesitas al menos ${params.amountIn} tokens.`)
-        } else if (error.message.includes('rejected') || error.message.includes('cancelled')) {
+        const errorMsg = error.message.toLowerCase()
+        
+        if (errorMsg.includes('insufficient')) {
+          throw new Error('Fondos insuficientes para realizar el swap real')
+        } else if (errorMsg.includes('allowance') || errorMsg.includes('approve')) {
+          throw new Error('Necesitas aprobar el token antes del swap. Intenta de nuevo.')
+        } else if (errorMsg.includes('slippage') || errorMsg.includes('price')) {
+          throw new Error('Precio cambió demasiado. Intenta con menos cantidad.')
+        } else if (errorMsg.includes('liquidity')) {
+          throw new Error('Liquidez insuficiente en el pool para este swap')
+        } else if (errorMsg.includes('rejected') || errorMsg.includes('cancelled')) {
           throw new Error('Swap cancelado por el usuario')
-        } else if (error.message.includes('network')) {
-          throw new Error('Error de red. Verifica tu conexión e intenta de nuevo.')
         } else {
-          throw new Error(`Error en swap: ${error.message}`)
+          throw new Error(`Error en swap real: ${error.message}`)
         }
       }
       
-      throw new Error('Error desconocido en el swap')
+      throw new Error('Error desconocido en el swap real')
     }
   }
 
