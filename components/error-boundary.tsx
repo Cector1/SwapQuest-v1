@@ -79,21 +79,41 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 <p className="mt-2">Por favor, intenta recargar la página.</p>
               </div>
 
-              {/* Error details for debugging (only in development) */}
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {/* Error details - show in both development and production for debugging */}
+              {this.state.error && (
                 <details className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs">
                   <summary className="cursor-pointer font-medium text-gray-700 dark:text-gray-300">
-                    Detalles del error (desarrollo)
+                    Detalles del error {process.env.NODE_ENV === 'development' ? '(desarrollo)' : '(debug)'}
                   </summary>
                   <div className="mt-2 space-y-2">
                     <div>
                       <strong>Mensaje:</strong> {this.state.error.message}
+                    </div>
+                    <div>
+                      <strong>Tipo:</strong> {this.state.error.name}
+                    </div>
+                    <div>
+                      <strong>Entorno:</strong> {typeof window !== 'undefined' ? 'Browser' : 'Server'}
+                    </div>
+                    <div>
+                      <strong>User Agent:</strong> {typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 100) : 'N/A'}
+                    </div>
+                    <div>
+                      <strong>URL:</strong> {typeof window !== 'undefined' ? window.location.href : 'N/A'}
                     </div>
                     {this.state.error.stack && (
                       <div>
                         <strong>Stack:</strong>
                         <pre className="mt-1 text-xs overflow-auto max-h-32 bg-gray-200 dark:bg-gray-700 p-2 rounded">
                           {this.state.error.stack}
+                        </pre>
+                      </div>
+                    )}
+                    {this.state.errorInfo && (
+                      <div>
+                        <strong>Component Stack:</strong>
+                        <pre className="mt-1 text-xs overflow-auto max-h-32 bg-gray-200 dark:bg-gray-700 p-2 rounded">
+                          {this.state.errorInfo.componentStack}
                         </pre>
                       </div>
                     )}
@@ -108,11 +128,21 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => window.location.reload()} 
+                  onClick={() => {
+                    // Clear localStorage before reload to reset state
+                    try {
+                      if (typeof window !== 'undefined' && window.localStorage) {
+                        localStorage.clear()
+                      }
+                    } catch (e) {
+                      console.warn('Could not clear localStorage:', e)
+                    }
+                    window.location.reload()
+                  }} 
                   className="w-full"
                 >
                   <Home className="w-4 h-4 mr-2" />
-                  Recargar página
+                  Recargar y limpiar datos
                 </Button>
               </div>
 

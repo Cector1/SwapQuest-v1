@@ -70,6 +70,7 @@ export function useWorldCoin() {
 
   useEffect(() => {
     let isMounted = true
+    let timeoutId: NodeJS.Timeout | null = null
     
     const initializeWorldCoin = async () => {
       try {
@@ -78,9 +79,21 @@ export function useWorldCoin() {
         
         console.log('🔍 Initializing WorldCoin MiniKit...')
         
+        // Safe environment checks
+        const isClient = typeof window !== 'undefined'
+        const hasNavigator = typeof navigator !== 'undefined'
+        
+        if (!isClient) {
+          console.log('❌ Not in client environment')
+          if (isMounted) {
+            setState(prev => ({ ...prev, isLoading: false, isInstalled: false }))
+          }
+          return
+        }
+        
         // Safe user agent check
-        const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : ''
-        const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
+        const userAgent = hasNavigator ? navigator.userAgent : ''
+        const currentUrl = window.location.href
         
         console.log('🌍 User Agent:', userAgent)
         console.log('🔗 Current URL:', currentUrl)
@@ -106,7 +119,7 @@ export function useWorldCoin() {
           console.log('✅ Session restored successfully from storage!')
           
           // Continue with MiniKit detection in background, but don't block UI
-          setTimeout(() => {
+          timeoutId = setTimeout(() => {
             if (isMounted) {
               detectMiniKitEnvironment()
             }
@@ -135,8 +148,20 @@ export function useWorldCoin() {
       try {
         if (!isMounted) return
         
+        // Safe environment checks
+        const isClient = typeof window !== 'undefined'
+        const hasNavigator = typeof navigator !== 'undefined'
+        
+        if (!isClient || !hasNavigator) {
+          console.log('❌ Missing browser APIs')
+          if (isMounted) {
+            setState(prev => ({ ...prev, isLoading: false, isInstalled: false }))
+          }
+          return
+        }
+        
         // Improved World App detection with safe checks
-        const isWorldApp = typeof window !== 'undefined' && typeof navigator !== 'undefined' && (
+        const isWorldApp = (
           navigator.userAgent.includes('WorldApp') || 
           navigator.userAgent.includes('World App') ||
           navigator.userAgent.includes('worldcoin') ||
@@ -156,10 +181,19 @@ export function useWorldCoin() {
         // Check if MiniKit is installed with proper error handling
         let installed = false
         try {
-          // Safe MiniKit check
-          if (typeof MiniKit !== 'undefined' && MiniKit.isInstalled) {
+          // Safe MiniKit check with multiple fallbacks
+          if (typeof window !== 'undefined' && (window as any).MiniKit) {
+            const MiniKitGlobal = (window as any).MiniKit
+            if (typeof MiniKitGlobal.isInstalled === 'function') {
+              installed = MiniKitGlobal.isInstalled()
+              console.log('📱 MiniKit.isInstalled():', installed)
+            } else {
+              console.log('📱 MiniKit.isInstalled not a function')
+              installed = isWorldApp // Fallback to environment detection
+            }
+          } else if (typeof MiniKit !== 'undefined' && MiniKit.isInstalled) {
             installed = MiniKit.isInstalled()
-            console.log('📱 MiniKit.isInstalled():', installed)
+            console.log('📱 MiniKit.isInstalled() (import):', installed)
           } else {
             console.log('📱 MiniKit not available')
             installed = isWorldApp // Fallback to environment detection
@@ -209,11 +243,21 @@ export function useWorldCoin() {
       }
     }
 
+    // Add a timeout to prevent infinite loading
+    const initTimeout = setTimeout(() => {
+      if (isMounted) {
+        console.log('⏰ Initialization timeout - setting loading to false')
+        setState(prev => ({ ...prev, isLoading: false }))
+      }
+    }, 10000) // 10 second timeout
+
     initializeWorldCoin()
     
     // Cleanup function
     return () => {
       isMounted = false
+      if (timeoutId) clearTimeout(timeoutId)
+      clearTimeout(initTimeout)
     }
   }, [])
 
