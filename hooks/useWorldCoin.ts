@@ -467,8 +467,18 @@ export function useWorldCoin() {
     try {
       console.log('🔄 Executing REAL swap via WorldCoin MiniKit...', params)
       
-      // Instead of using MiniKit.pay() which is just a payment/transfer,
-      // we need to use MiniKit's transaction capabilities to interact with Uniswap V3
+      // Convert string amounts to BigInt and then to hex format for blockchain
+      const amountInHex = '0x' + BigInt(params.amountIn).toString(16)
+      const amountOutMinimumHex = '0x' + BigInt(params.amountOutMinimum).toString(16)
+      const feeHex = '0x' + BigInt(params.fee).toString(16)
+      const deadlineHex = '0x' + BigInt(Math.floor(Date.now() / 1000) + 1200).toString(16)
+      
+      console.log('🔄 Converted amounts to hex:', {
+        amountIn: params.amountIn + ' -> ' + amountInHex,
+        amountOutMinimum: params.amountOutMinimum + ' -> ' + amountOutMinimumHex,
+        fee: params.fee + ' -> ' + feeHex,
+        deadline: deadlineHex
+      })
       
       // Convert token addresses to MiniKit token symbols
       const getTokenSymbol = (address: string): string => {
@@ -484,7 +494,7 @@ export function useWorldCoin() {
       const fromToken = getTokenSymbol(params.tokenIn)
       const toToken = getTokenSymbol(params.tokenOut)
       
-      console.log('🔄 Real swap execution:', { fromToken, toToken, amountIn: params.amountIn })
+      console.log('🔄 Real swap execution:', { fromToken, toToken, amountInHex, amountOutMinimumHex })
 
       // Use MiniKit's sendTransaction to interact with Uniswap V3 Router
       // This is the correct way to perform actual swaps, not payments
@@ -494,13 +504,15 @@ export function useWorldCoin() {
       const swapData = {
         tokenIn: params.tokenIn === '0x0000000000000000000000000000000000000000' ? '0x4200000000000000000000000000000000000006' : params.tokenIn, // Use WETH for ETH
         tokenOut: params.tokenOut === '0x0000000000000000000000000000000000000000' ? '0x4200000000000000000000000000000000000006' : params.tokenOut, // Use WETH for ETH
-        fee: params.fee,
+        fee: feeHex,
         recipient: params.recipient || state.userAddress,
-        deadline: Math.floor(Date.now() / 1000) + 1200, // 20 minutes
-        amountIn: params.amountIn,
-        amountOutMinimum: params.amountOutMinimum,
-        sqrtPriceLimitX96: 0
+        deadline: deadlineHex,
+        amountIn: amountInHex,
+        amountOutMinimum: amountOutMinimumHex,
+        sqrtPriceLimitX96: '0x0'
       }
+
+      console.log('🔄 Final swap data with hex values:', swapData)
 
       // Execute the real swap transaction through MiniKit
       const swapResult = await MiniKit.commandsAsync.sendTransaction({
@@ -529,7 +541,7 @@ export function useWorldCoin() {
           }],
           functionName: 'exactInputSingle',
           args: [swapData],
-          value: params.tokenIn === '0x0000000000000000000000000000000000000000' ? params.amountIn : '0'
+          value: params.tokenIn === '0x0000000000000000000000000000000000000000' ? amountInHex : '0x0'
         }]
       })
 
