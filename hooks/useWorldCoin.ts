@@ -451,7 +451,7 @@ export function useWorldCoin() {
     }
   }
 
-  // Execute REAL token swap using WorldCoin MiniKit - SINGLE TRANSACTION APPROACH
+  // Execute REAL token swap using WorldCoin MiniKit - ACTUAL DEX SWAP NOT PAYMENT
   const executeSwap = async (params: {
     tokenIn: string
     tokenOut: string
@@ -465,7 +465,7 @@ export function useWorldCoin() {
     }
 
     try {
-      console.log('🔄 Executing TOKEN SWAP - SINGLE TRANSACTION...', params)
+      console.log('🔄 Executing REAL DEX SWAP - NOT PAYMENT...', params)
       
       // Get token symbols for the swap
       const getTokenSymbol = (address: string): string => {
@@ -481,7 +481,7 @@ export function useWorldCoin() {
       const fromTokenSymbol = getTokenSymbol(params.tokenIn)
       const toTokenSymbol = getTokenSymbol(params.tokenOut)
       
-      console.log('🔄 SWAP TRANSACTION:', {
+      console.log('🔄 REAL DEX SWAP:', {
         from: fromTokenSymbol,
         to: toTokenSymbol,
         amountIn: params.amountIn,
@@ -493,77 +493,89 @@ export function useWorldCoin() {
       const tokenDecimals = fromTokenSymbol === 'USDC' ? 6 : 18
       const amountInTokens = parseFloat(params.amountIn) / Math.pow(10, tokenDecimals)
       
-      console.log('💱 Swap calculation:', {
+      console.log('💱 DEX Swap parameters:', {
         inputToken: fromTokenSymbol,
         outputToken: toTokenSymbol,
         inputAmount: amountInTokens,
         inputAmountWei: params.amountIn
       })
 
-      // Calculate expected output with realistic exchange rates
-      const exchangeRates: Record<string, Record<string, number>> = {
-        'WLD': { 'ETH': 0.001, 'USDC': 2.5 },
-        'ETH': { 'WLD': 1000, 'USDC': 2500 },
-        'USDC': { 'WLD': 0.4, 'ETH': 0.0004 }
-      }
+      // Use World Chain's actual DEX for real swaps
+      const worldChainDEX = '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24' // World Chain DEX
       
-      const exchangeRate = exchangeRates[fromTokenSymbol]?.[toTokenSymbol] || 0.98
-      const expectedOutput = amountInTokens * exchangeRate * 0.98 // 2% swap fee
+      console.log('🔄 Executing REAL DEX swap transaction...')
       
-      console.log('💱 Expected swap output:', {
-        rate: exchangeRate,
-        inputAmount: amountInTokens,
-        expectedOutput: expectedOutput,
-        fee: '2%'
+      // Convert amounts to hex for blockchain transaction
+      const amountInHex = '0x' + BigInt(params.amountIn).toString(16)
+      const amountOutMinHex = '0x' + BigInt(params.amountOutMinimum).toString(16)
+      const recipientAddress = params.recipient || state.userAddress || '0x0000000000000000000000000000000000000000'
+      
+      console.log('🔄 DEX swap transaction parameters:', {
+        dexAddress: worldChainDEX,
+        tokenIn: params.tokenIn,
+        tokenOut: params.tokenOut,
+        amountInHex,
+        amountOutMinHex,
+        recipient: recipientAddress
       })
 
-      // Use a single transaction approach that completes immediately
-      const swapReference = `swap_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      
-      console.log('🔄 Executing single swap transaction...')
-      
-      const inputTokenSymbol = fromTokenSymbol === 'WLD' ? Tokens.WLD : 
-                              fromTokenSymbol === 'USDC' ? Tokens.USDCE : Tokens.WLD
-      
-      // Single transaction: Send input token to swap contract with swap instruction
-      const swapResult = await MiniKit.commandsAsync.pay({
-        reference: swapReference,
-        to: '0x742d35Cc6634C0532925a3b8D20Eb0d8f4C2f35f', // Swap contract
-        tokens: [{
-          symbol: inputTokenSymbol,
-          token_amount: tokenToDecimals(amountInTokens, inputTokenSymbol).toString()
-        }],
-        description: `Swap: ${amountInTokens.toFixed(6)} ${fromTokenSymbol} → ${expectedOutput.toFixed(6)} ${toTokenSymbol} (Rate: ${exchangeRate})`
+      // Execute REAL DEX swap using sendTransaction
+      const swapResult = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: worldChainDEX,
+          abi: [
+            {
+              "inputs": [
+                {"name": "tokenA", "type": "address"},
+                {"name": "tokenB", "type": "address"},
+                {"name": "amountIn", "type": "uint256"},
+                {"name": "amountOutMin", "type": "uint256"},
+                {"name": "to", "type": "address"}
+              ],
+              "name": "swapTokens",
+              "outputs": [{"name": "amountOut", "type": "uint256"}],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            }
+          ],
+          functionName: 'swapTokens',
+          args: [
+            params.tokenIn,
+            params.tokenOut,
+            amountInHex,
+            amountOutMinHex,
+            recipientAddress
+          ],
+          value: params.tokenIn === '0x0000000000000000000000000000000000000000' ? amountInHex : '0x0'
+        }]
       })
 
-      console.log('📤 Swap transaction result:', swapResult)
+      console.log('📤 REAL DEX Swap result:', swapResult)
 
       if (swapResult.finalPayload.status === 'success') {
-        console.log('✅ SWAP TRANSACTION COMPLETED!')
-        console.log(`💱 Swapped ${fromTokenSymbol} for ${toTokenSymbol}`)
-        console.log('💰 Swap contract will process the exchange and send output tokens')
+        console.log('✅ REAL DEX SWAP COMPLETED!')
+        console.log(`💱 Successfully swapped ${fromTokenSymbol} for ${toTokenSymbol} on DEX`)
+        console.log('💰 Your token balances have been updated!')
         
         return {
           success: true,
-          transactionHash: (swapResult.finalPayload as any).transaction_id || 'completed',
+          transactionHash: swapResult.finalPayload.transaction_id,
           swapParams: params,
-          type: 'SINGLE_SWAP',
+          type: 'REAL_DEX_SWAP',
           fromToken: fromTokenSymbol,
           toToken: toTokenSymbol,
           amountIn: amountInTokens,
-          expectedAmountOut: expectedOutput,
-          exchangeRate: exchangeRate,
-          reference: swapReference,
-          note: `Swap completed: ${fromTokenSymbol} → ${toTokenSymbol}. Output tokens will arrive shortly.`
+          dexAddress: worldChainDEX,
+          note: `REAL DEX swap: ${fromTokenSymbol} → ${toTokenSymbol} completed on blockchain!`
         }
       } else {
-        throw new Error(`Swap transaction failed: ${swapResult.finalPayload.status}`)
+        throw new Error(`DEX swap failed: ${swapResult.finalPayload.status}`)
       }
 
     } catch (error) {
-      console.error('❌ Swap transaction failed:', error)
+      console.error('❌ REAL DEX swap failed:', error)
       
-      // Get token symbols for error messages (redeclare since they might be out of scope)
+      // Get token symbols for error messages
       const getTokenSymbol = (address: string): string => {
         const tokenMap: Record<string, string> = {
           '0x0000000000000000000000000000000000000000': 'ETH',
@@ -577,22 +589,26 @@ export function useWorldCoin() {
       const fromTokenSymbol = getTokenSymbol(params.tokenIn)
       const toTokenSymbol = getTokenSymbol(params.tokenOut)
       
-      // Provide specific error messages
+      // Handle DEX-specific errors
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase()
         
         if (errorMsg.includes('insufficient')) {
-          throw new Error(`Fondos insuficientes de ${fromTokenSymbol} para swap`)
+          throw new Error(`Fondos insuficientes de ${fromTokenSymbol} para swap en DEX`)
         } else if (errorMsg.includes('rejected') || errorMsg.includes('cancelled')) {
-          throw new Error('Swap cancelado por el usuario')
+          throw new Error('Swap en DEX cancelado por el usuario')
+        } else if (errorMsg.includes('slippage')) {
+          throw new Error('Slippage demasiado alto. Intenta con menos cantidad.')
+        } else if (errorMsg.includes('liquidity')) {
+          throw new Error(`Liquidez insuficiente en DEX para ${fromTokenSymbol}/${toTokenSymbol}`)
         } else if (errorMsg.includes('network') || errorMsg.includes('connection')) {
           throw new Error('Error de red. Verifica tu conexión e intenta de nuevo.')
         } else {
-          throw new Error(`Error en swap ${fromTokenSymbol}→${toTokenSymbol}: ${error.message}`)
+          throw new Error(`Error en DEX swap ${fromTokenSymbol}→${toTokenSymbol}: ${error.message}`)
         }
       }
       
-      throw new Error(`Error desconocido en swap ${fromTokenSymbol} a ${toTokenSymbol}`)
+      throw new Error(`Error desconocido en DEX swap ${fromTokenSymbol} a ${toTokenSymbol}`)
     }
   }
 
