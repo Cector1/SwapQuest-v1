@@ -178,24 +178,24 @@ export class RealBlockchainIntegration {
       // Calcular slippage
       const amountOutNum = parseFloat(estimatedAmountOut)
       const minimumAmountOut = (amountOutNum * (100 - params.slippage)) / 100
-      
+        
       // Estimar gas para World Chain
       const gasEstimate = "300000" // Estimación conservadora para Uniswap V3
-      
-      // Calcular impacto de precio (simplificado)
+        
+        // Calcular impacto de precio (simplificado)
       const priceImpact = 0.3 // 0.3% por defecto para World Chain
-      
-      const quote: RealSwapQuote = {
-        amountIn: params.amount,
+        
+        const quote: RealSwapQuote = {
+          amountIn: params.amount,
         amountOut: estimatedAmountOut,
         minimumAmountOut: minimumAmountOut.toString(),
-        priceImpact,
-        gasEstimate,
+          priceImpact,
+          gasEstimate,
         path: [fromTokenAddress, toTokenAddress]
-      }
-      
+        }
+        
       console.log('REAL swap quote for World Chain:', quote)
-      return quote
+        return quote
     } catch (error) {
       console.error('Error getting real swap quote on World Chain:', error)
       throw error

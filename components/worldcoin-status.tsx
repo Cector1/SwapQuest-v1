@@ -7,10 +7,10 @@ import { Globe, Shield, AlertCircle, CheckCircle, Wifi, WifiOff } from 'lucide-r
 import { motion } from 'framer-motion'
 
 export function WorldCoinStatus() {
-  const { 
-    isInstalled, 
+  const {
+    isInstalled,
     isConnected, 
-    isLoading, 
+    isLoading,
     user,
     userAddress,
     signInWithWorldCoin 

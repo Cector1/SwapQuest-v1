@@ -35,16 +35,16 @@ export async function POST(req: NextRequest) {
     }
 
     // En una aplicación real, aquí verificarías el pago con la API de WorldCoin
-    // const response = await fetch(
-    //   `https://developer.worldcoin.org/api/v2/minikit/transaction/${payload.transaction_id}?app_id=${process.env.APP_ID}`,
-    //   {
-    //     method: 'GET',
-    //     headers: {
-    //       Authorization: `Bearer ${process.env.DEV_PORTAL_API_KEY}`,
-    //     },
-    //   }
-    // )
-    // const transaction = await response.json()
+      // const response = await fetch(
+      //   `https://developer.worldcoin.org/api/v2/minikit/transaction/${payload.transaction_id}?app_id=${process.env.APP_ID}`,
+      //   {
+      //     method: 'GET',
+      //     headers: {
+      //       Authorization: `Bearer ${process.env.DEV_PORTAL_API_KEY}`,
+      //     },
+      //   }
+      // )
+      // const transaction = await response.json()
 
     // Para el demo, simulamos una verificación exitosa
     const isValidPayment = true // En producción: transaction.status !== 'failed'
@@ -55,11 +55,11 @@ export async function POST(req: NextRequest) {
         completedMissions.set(`${missionId}-${payload.reference}`, {
           missionId,
           userId: 'worldcoin-user', // En producción, obtener del contexto de usuario
-          transactionId: payload.transaction_id,
+        transactionId: payload.transaction_id,
           amount: '0', // En producción, obtener del transaction
           token: 'WLD',
           timestamp: Date.now()
-        })
+      })
 
         console.log('✅ Mission completed:', {
           missionId,
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     } else {
       return NextResponse.json(
         { 
-          success: false, 
+        success: false,
           error: 'Pago no válido o fallido' 
         },
         { status: 400 }

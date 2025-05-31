@@ -61,7 +61,7 @@ export function WorldCoinAuthHeader() {
       isLoading,
       buttonDisabled: !isInstalled || isSigningIn || isLoading
     })
-    
+
     setIsSigningIn(true)
     try {
       console.log('🔄 Calling signInWithWorldCoin...')
@@ -198,16 +198,16 @@ export function WorldCoinAuthHeader() {
               {/* Status Badges - Solo mostrar si está conectado */}
               {isInstalled && (
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-800 text-xs px-2 py-1">
-                  <Globe className="w-3 h-3 mr-1" />
+                    <Globe className="w-3 h-3 mr-1" />
                   WC
-                </Badge>
+                  </Badge>
               )}
 
               {isConnected && user?.isVerified && (
                 <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-800 text-xs px-2 py-1">
-                  <Shield className="w-3 h-3 mr-1" />
+                    <Shield className="w-3 h-3 mr-1" />
                   ✓
-                </Badge>
+                  </Badge>
               )}
 
               {!isConnected ? (
@@ -241,7 +241,7 @@ export function WorldCoinAuthHeader() {
                       {user?.username || formatAddress(userAddress || '')}
                     </p>
                   </div>
-
+                  
                   {/* Deposit Button - Más pequeño */}
                   <Button
                     onClick={() => setShowDepositModal(true)}
@@ -249,7 +249,7 @@ export function WorldCoinAuthHeader() {
                     variant="outline"
                     className="px-2 py-1 text-xs"
                   >
-                    <Plus className="w-3 h-3" />
+                      <Plus className="w-3 h-3" />
                   </Button>
 
                   {/* Settings/Disconnect - Más pequeño */}

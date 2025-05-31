@@ -82,8 +82,8 @@ DeFi (Finanzas Descentralizadas) es un ecosistema de aplicaciones financieras co
 
 ¡Completa esta lección para comenzar tu viaje en DeFi!
       `
-    },
-    {
+      },
+      {
       id: 'wallets-security',
       title: 'Wallets y Seguridad',
       description: 'Protege tus activos digitales con las mejores prácticas',
@@ -91,7 +91,7 @@ DeFi (Finanzas Descentralizadas) es un ecosistema de aplicaciones financieras co
       duration: '20 min',
       difficulty: 'Principiante',
       category: 'basics',
-      completed: false,
+        completed: false,
       cost: 0,
       isPremium: false,
       content: `
@@ -122,8 +122,8 @@ DeFi (Finanzas Descentralizadas) es un ecosistema de aplicaciones financieras co
 - Reduce riesgo de bots y ataques Sybil
 - Integración nativa con protocolos DeFi
       `
-    },
-    {
+      },
+      {
       id: 'smart-contracts',
       title: 'Smart Contracts Básicos',
       description: 'Entiende cómo funcionan los contratos inteligentes',
@@ -174,7 +174,7 @@ Programas autoejecutables que corren en blockchain con términos del acuerdo dir
       duration: '35 min',
       difficulty: 'Avanzado',
       category: 'premium',
-      completed: false,
+        completed: false,
       cost: 50,
       isPremium: true,
       content: `
@@ -222,7 +222,7 @@ Programas autoejecutables que corren en blockchain con términos del acuerdo dir
       duration: '40 min',
       difficulty: 'Avanzado',
       category: 'premium',
-      completed: false,
+        completed: false,
       cost: 75,
       isPremium: true,
       content: `
@@ -279,7 +279,7 @@ Programas autoejecutables que corren en blockchain con términos del acuerdo dir
       duration: '30 min',
       difficulty: 'Avanzado',
       category: 'premium',
-      completed: false,
+        completed: false,
       cost: 100,
       isPremium: true,
       content: `
@@ -353,7 +353,7 @@ const { finalPayload } = await MiniKit.commandsAsync.pay({
       duration: '45 min',
       difficulty: 'Avanzado',
       category: 'premium',
-      completed: false,
+        completed: false,
       cost: 125,
       isPremium: true,
       content: `
@@ -498,22 +498,22 @@ Maximal Extractable Value: valor que puede ser extraído de la reordenación, in
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
                 <Gem className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
+            </div>
+            <div>
                 <h3 className="font-semibold text-purple-900 dark:text-purple-100">Centro de Conocimiento</h3>
                 <p className="text-sm text-purple-700 dark:text-purple-300">
                   Desbloquea contenido premium con tus puntos
                 </p>
               </div>
             </div>
-            <div className="text-right">
+          <div className="text-right">
               <div className="text-2xl font-bold text-purple-600 flex items-center space-x-1">
                 <Coins className="w-6 h-6" />
                 <span>{knowledgePoints}</span>
               </div>
               <div className="text-xs text-purple-500">puntos disponibles</div>
-            </div>
-          </div>
+        </div>
+      </div>
         </CardContent>
       </Card>
 
@@ -541,7 +541,7 @@ Maximal Extractable Value: valor que puede ser extraído de la reordenación, in
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-orange-600">
               {Math.round((completedLessons.length / lessons.length) * 100)}%
-            </div>
+        </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Progreso</div>
           </CardContent>
         </Card>
@@ -577,16 +577,16 @@ Maximal Extractable Value: valor que puede ser extraído de la reordenación, in
                           : lesson.isPremium && !isAccessible
                             ? 'bg-gray-100 dark:bg-gray-900'
                             : 'bg-blue-100 dark:bg-blue-900'
-                      }`}>
+                }`}>
                         {isCompleted ? (
                           <CheckCircle className="w-6 h-6 text-green-600" />
                         ) : lesson.isPremium && !isAccessible ? (
                           <Lock className="w-6 h-6 text-gray-600" />
-                        ) : (
+                  ) : (
                           <IconComponent className="w-6 h-6 text-blue-600" />
-                        )}
-                      </div>
-                      
+                  )}
+                </div>
+                
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <h3 className="font-semibold">{lesson.title}</h3>
@@ -600,11 +600,11 @@ Maximal Extractable Value: valor que puede ser extraído de la reordenación, in
                         <p className="text-xs text-gray-500 mb-2">
                           Hecho por {lesson.author}
                         </p>
-                        
+                      
                         <div className="flex items-center space-x-2 flex-wrap gap-1">
                           <Badge className={getDifficultyColor(lesson.difficulty)}>
-                            {lesson.difficulty}
-                          </Badge>
+                          {lesson.difficulty}
+                        </Badge>
                           <Badge variant="outline" className="text-xs">
                             <Clock className="w-3 h-3 mr-1" />
                             {lesson.duration}
@@ -626,7 +626,7 @@ Maximal Extractable Value: valor que puede ser extraído de la reordenación, in
                           Completada
                         </Badge>
                       ) : !isAccessible ? (
-                        <Button 
+                  <Button
                           size="sm"
                           variant="outline"
                           onClick={() => unlockLesson(lesson)}
@@ -648,7 +648,7 @@ Maximal Extractable Value: valor que puede ser extraído de la reordenación, in
                         </Button>
                       )}
                     </div>
-                  </div>
+                </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -685,8 +685,8 @@ Maximal Extractable Value: valor que puede ser extraído de la reordenación, in
                 <div dangerouslySetInnerHTML={{ 
                   __html: selectedLesson.content.replace(/\n/g, '<br>').replace(/#{1,6} /g, '<h3>').replace(/<h3>/g, '<h3 class="text-lg font-semibold mt-4 mb-2">') 
                 }} />
-              </div>
-              
+        </div>
+        
               <div className="flex space-x-3 pt-4 border-t">
                 <Button
                   variant="outline"
@@ -709,14 +709,14 @@ Maximal Extractable Value: valor que puede ser extraído de la reordenación, in
                     <div className="flex items-center space-x-2">
                       <Award className="w-4 h-4" />
                       <span>Completar (+10 pts)</span>
-                    </div>
+                </div>
                   )}
                 </Button>
-              </div>
-            </div>
-          )}
+                </div>
+                  </div>
+                )}
         </DialogContent>
       </Dialog>
-    </div>
+        </div>
   )
 } 

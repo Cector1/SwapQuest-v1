@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     
     // Create user session data
     const sessionData = {
-      address: payload.address,
+        address: payload.address,
       isVerified: true,
       authenticatedAt: new Date().toISOString(),
       nonce: nonce,

@@ -129,9 +129,9 @@ export function SwapModal({ isOpen, onClose, mission, onSwapComplete }: SwapModa
           </div>
 
           {/* World Chain Notice */}
-          <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3 flex items-center space-x-2">
-            <TrendingUp className="w-4 h-4 text-blue-400" />
-            <div className="text-blue-400 text-sm">
+            <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3 flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4 text-blue-400" />
+              <div className="text-blue-400 text-sm">
               <p className="font-semibold">World Chain Swap</p>
               <p className="text-xs">Using Uniswap V3 on World Chain for real transactions</p>
             </div>
@@ -182,7 +182,7 @@ export function SwapModal({ isOpen, onClose, mission, onSwapComplete }: SwapModa
               <div className="text-right">
                 <div className="text-lg font-semibold text-white">
                   {isQuoteLoading ? "..." : expectedOutput}
-                </div>
+                  </div>
                 <div className="text-xs text-zinc-500">Expected output</div>
               </div>
             </div>
