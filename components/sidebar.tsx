@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Home, Gift, Bookmark, Store, Coins, Settings, BookOpen, LogOut, MoreHorizontal, User } from "lucide-react"
 
 const menuItems = [
@@ -85,7 +85,6 @@ export function Sidebar() {
       <div className="p-4 border-t border-zinc-800">
         <div className="flex items-center space-x-3">
           <Avatar className="w-8 h-8">
-            <AvatarImage src="/placeholder.svg?height=32&width=32" />
             <AvatarFallback className="bg-zinc-700">
               <User className="w-4 h-4" />
             </AvatarFallback>

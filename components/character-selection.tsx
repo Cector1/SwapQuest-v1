@@ -1,16 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
+import { Sword, Wand2, Eye, Shield } from "lucide-react"
 
 const characters = [
-  { id: 1, name: "Warrior", description: "Strong and brave, excels in combat", startingItem: "Rusty Sword" },
-  { id: 2, name: "Mage", description: "Powerful spellcaster with arcane knowledge", startingItem: "Apprentice Staff" },
-  { id: 3, name: "Rogue", description: "Stealthy and quick, master of deception", startingItem: "Worn Dagger" },
-  { id: 4, name: "Cleric", description: "Divine healer with protective abilities", startingItem: "Simple Mace" },
+  { id: 1, name: "Warrior", description: "Strong and brave, excels in combat", startingItem: "Rusty Sword", icon: Sword },
+  { id: 2, name: "Mage", description: "Powerful spellcaster with arcane knowledge", startingItem: "Apprentice Staff", icon: Wand2 },
+  { id: 3, name: "Rogue", description: "Stealthy and quick, master of deception", startingItem: "Worn Dagger", icon: Eye },
+  { id: 4, name: "Cleric", description: "Divine healer with protective abilities", startingItem: "Simple Mace", icon: Shield },
 ]
 
 export function CharacterSelection() {
@@ -27,7 +27,7 @@ export function CharacterSelection() {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 className={`
-                  p-4 rounded-lg border-2 h-full flex flex-col
+                  p-4 rounded-lg border-2 h-full flex flex-col cursor-pointer
                   ${
                     selectedCharacter === character.id
                       ? "border-amber-400 bg-purple-800/50"
@@ -37,13 +37,8 @@ export function CharacterSelection() {
                 onClick={() => setSelectedCharacter(character.id)}
               >
                 <div className="flex justify-center mb-4">
-                  <div className="relative w-32 h-32 rounded-full bg-purple-700 overflow-hidden">
-                    <Image
-                      src={`/placeholder.svg?height=128&width=128&text=${character.name}`}
-                      alt={character.name}
-                      fill
-                      className="object-cover"
-                    />
+                  <div className="w-32 h-32 rounded-full bg-purple-700 flex items-center justify-center">
+                    <character.icon className="w-16 h-16 text-amber-400" />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-center text-amber-400">{character.name}</h3>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { MiniKit, WalletAuthInput, PayCommandInput, Tokens, tokenToDecimals } from '@worldcoin/minikit-js'
+import { ethers } from 'ethers'
 
 export interface WorldCoinState {
   isInstalled: boolean
@@ -367,8 +368,8 @@ export function useWorldCoin() {
     try {
       console.log('🔄 Executing REAL swap via WorldCoin MiniKit...', params)
       
-      // For now, use a simplified approach that works with WorldCoin MiniKit
-      // Instead of complex Uniswap transactions, use MiniKit's built-in swap functionality
+      // Instead of using MiniKit.pay() which is just a payment/transfer,
+      // we need to use MiniKit's transaction capabilities to interact with Uniswap V3
       
       // Convert token addresses to MiniKit token symbols
       const getTokenSymbol = (address: string): string => {
@@ -384,27 +385,59 @@ export function useWorldCoin() {
       const fromToken = getTokenSymbol(params.tokenIn)
       const toToken = getTokenSymbol(params.tokenOut)
       
-      // Convert amount from wei to decimal
-      const amountInDecimal = parseFloat(params.amountIn) / Math.pow(10, fromToken === 'USDC' ? 6 : 18)
-      
-      console.log('🔄 Simplified swap:', { fromToken, toToken, amount: amountInDecimal })
+      console.log('🔄 Real swap execution:', { fromToken, toToken, amountIn: params.amountIn })
 
-      // Use MiniKit's payment system as a swap simulation
-      // This creates a real transaction that can be verified
-      const swapResult = await MiniKit.commandsAsync.pay({
-        reference: `swap_${Date.now()}`,
-        to: '0x742d35Cc6634C0532925a3b8D20Eb0d8f4C2f35f', // App address
-        tokens: [{
-          symbol: fromToken === 'WLD' ? Tokens.WLD : Tokens.USDCE,
-          token_amount: tokenToDecimals(amountInDecimal, fromToken === 'WLD' ? Tokens.WLD : Tokens.USDCE).toString()
-        }],
-        description: `Swap ${amountInDecimal} ${fromToken} to ${toToken} on World Chain`
+      // Use MiniKit's sendTransaction to interact with Uniswap V3 Router
+      // This is the correct way to perform actual swaps, not payments
+      const uniswapV3Router = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45' // Uniswap V3 Router on World Chain
+      
+      // Prepare the swap transaction data for Uniswap V3 exactInputSingle
+      const swapData = {
+        tokenIn: params.tokenIn === '0x0000000000000000000000000000000000000000' ? '0x4200000000000000000000000000000000000006' : params.tokenIn, // Use WETH for ETH
+        tokenOut: params.tokenOut === '0x0000000000000000000000000000000000000000' ? '0x4200000000000000000000000000000000000006' : params.tokenOut, // Use WETH for ETH
+        fee: params.fee,
+        recipient: params.recipient || state.userAddress,
+        deadline: Math.floor(Date.now() / 1000) + 1200, // 20 minutes
+        amountIn: params.amountIn,
+        amountOutMinimum: params.amountOutMinimum,
+        sqrtPriceLimitX96: 0
+      }
+
+      // Execute the real swap transaction through MiniKit
+      const swapResult = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: uniswapV3Router,
+          abi: [{
+            "inputs": [
+              {
+                "components": [
+                  {"name": "tokenIn", "type": "address"},
+                  {"name": "tokenOut", "type": "address"},
+                  {"name": "fee", "type": "uint24"},
+                  {"name": "recipient", "type": "address"},
+                  {"name": "deadline", "type": "uint256"},
+                  {"name": "amountIn", "type": "uint256"},
+                  {"name": "amountOutMinimum", "type": "uint256"},
+                  {"name": "sqrtPriceLimitX96", "type": "uint160"}
+                ],
+                "name": "params",
+                "type": "tuple"
+              }
+            ],
+            "name": "exactInputSingle",
+            "outputs": [{"name": "amountOut", "type": "uint256"}],
+            "type": "function"
+          }],
+          functionName: 'exactInputSingle',
+          args: [swapData],
+          value: params.tokenIn === '0x0000000000000000000000000000000000000000' ? params.amountIn : '0'
+        }]
       })
 
       console.log('📤 REAL Swap transaction result:', swapResult)
 
       if (swapResult.finalPayload.status === 'success') {
-        console.log('✅ REAL Swap executed successfully!')
+        console.log('✅ REAL Swap executed successfully via Uniswap V3!')
         return {
           success: true,
           transactionHash: swapResult.finalPayload.transaction_id,
