@@ -5,6 +5,7 @@ import { WldBalanceProvider } from '@/hooks/useArenaBalance';
 import { WorldCoinAuthHeader } from '@/components/worldcoin-auth-header';
 import { Toaster } from 'sonner';
 import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -87,19 +88,21 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-x-hidden`}>
-        <MiniKitProvider>
-          <WldBalanceProvider>
-            <div className="min-h-screen">
-              <WorldCoinAuthHeader />
-              {children}
-            </div>
-            <Toaster 
-              position="top-center"
-              theme="light"
-              richColors
-            />
-          </WldBalanceProvider>
-        </MiniKitProvider>
+        <ErrorBoundary>
+          <MiniKitProvider>
+            <WldBalanceProvider>
+              <div className="min-h-screen">
+                <WorldCoinAuthHeader />
+                {children}
+              </div>
+              <Toaster 
+                position="top-center"
+                theme="light"
+                richColors
+              />
+            </WldBalanceProvider>
+          </MiniKitProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

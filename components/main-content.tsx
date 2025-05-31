@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LearningHub } from "./learning-hub"
 import { MissionsSystem } from "./missions-system"
+import { LoadingScreen } from "./loading-screen"
+import { useWorldCoin } from "@/hooks/useWorldCoin"
 import { 
   BookOpen, 
   Trophy,
@@ -19,6 +21,12 @@ import {
 
 export function MainContent() {
   const [activeTab, setActiveTab] = useState("missions")
+  const { isLoading, isInstalled } = useWorldCoin()
+
+  // Show loading screen while WorldCoin initializes
+  if (isLoading) {
+    return <LoadingScreen message="Inicializando WorldCoin..." showDetails={true} />
+  }
 
   const tabs = [
     { 

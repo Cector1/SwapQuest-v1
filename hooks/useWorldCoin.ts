@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from 'react'
 import { MiniKit, WalletAuthInput, PayCommandInput, Tokens, tokenToDecimals } from '@worldcoin/minikit-js'
 import { ethers } from 'ethers'
@@ -23,11 +25,12 @@ const STORAGE_KEYS = {
   CONNECTION_STATE: 'worldcoin_connected'
 }
 
+// Safe storage functions with error handling
 const saveToStorage = (key: string, data: any) => {
   try {
-    localStorage.setItem(key, JSON.stringify(data))
-    // Also save to cookies for server-side access
-    document.cookie = `${key}=${JSON.stringify(data)}; path=/; max-age=${7 * 24 * 60 * 60}` // 7 days
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, JSON.stringify(data))
+    }
   } catch (error) {
     console.warn('Failed to save to storage:', error)
   }
@@ -35,20 +38,23 @@ const saveToStorage = (key: string, data: any) => {
 
 const loadFromStorage = (key: string) => {
   try {
-    const item = localStorage.getItem(key)
-    return item ? JSON.parse(item) : null
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const item = localStorage.getItem(key)
+      return item ? JSON.parse(item) : null
+    }
   } catch (error) {
     console.warn('Failed to load from storage:', error)
-    return null
   }
+  return null
 }
 
 const clearStorage = () => {
   try {
-    Object.values(STORAGE_KEYS).forEach(key => {
-      localStorage.removeItem(key)
-      document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
-    })
+    if (typeof window !== 'undefined' && window.localStorage) {
+      Object.values(STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key)
+      })
+    }
   } catch (error) {
     console.warn('Failed to clear storage:', error)
   }
@@ -63,11 +69,21 @@ export function useWorldCoin() {
   })
 
   useEffect(() => {
+    let isMounted = true
+    
     const initializeWorldCoin = async () => {
       try {
+        // Early return if component unmounted
+        if (!isMounted) return
+        
         console.log('🔍 Initializing WorldCoin MiniKit...')
-        console.log('🌍 User Agent:', navigator.userAgent)
-        console.log('🔗 Current URL:', window.location.href)
+        
+        // Safe user agent check
+        const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+        const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
+        
+        console.log('🌍 User Agent:', userAgent)
+        console.log('🔗 Current URL:', currentUrl)
         
         // Check for saved session FIRST - ALWAYS try to restore if exists
         const savedSession = loadFromStorage(STORAGE_KEYS.WORLDCOIN_SESSION)
@@ -77,7 +93,7 @@ export function useWorldCoin() {
         console.log('💾 Saved session data:', { savedSession, savedUserData, wasConnected })
         
         // If we have a valid saved session, restore it IMMEDIATELY
-        if (savedSession && savedUserData && wasConnected) {
+        if (savedSession && savedUserData && wasConnected && isMounted) {
           console.log('🔄 Restoring previous WorldCoin session from storage...')
           setState({
             isInstalled: true, // Assume installed if we had a session
@@ -91,7 +107,9 @@ export function useWorldCoin() {
           
           // Continue with MiniKit detection in background, but don't block UI
           setTimeout(() => {
-            detectMiniKitEnvironment()
+            if (isMounted) {
+              detectMiniKitEnvironment()
+            }
           }, 100)
           return
         }
@@ -101,106 +119,143 @@ export function useWorldCoin() {
         
       } catch (error) {
         console.error('❌ Error initializing WorldCoin:', error)
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          isInstalled: false,
-          isReady: false,
-          isConnected: false
-        }))
-      }
-    }
-
-    const detectMiniKitEnvironment = async () => {
-      // Improved World App detection
-      const isWorldApp = typeof window !== 'undefined' && (
-        navigator.userAgent.includes('WorldApp') || 
-        navigator.userAgent.includes('World App') ||
-        navigator.userAgent.includes('worldcoin') ||
-        window.location.hostname.includes('worldcoin') ||
-        window.location.hostname.includes('worldapp') ||
-        // Check for MiniKit global object
-        typeof (window as any).MiniKit !== 'undefined'
-      )
-      
-      console.log('🌍 Is World App environment (improved detection):', isWorldApp)
-      
-      // Wait for MiniKit to initialize (shorter wait)
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Check if MiniKit is installed
-      let installed = false
-      try {
-        installed = MiniKit.isInstalled()
-        console.log('📱 MiniKit.isInstalled():', installed)
-      } catch (error) {
-        console.log('📱 MiniKit.isInstalled() failed:', error)
-        // If we're in a World App environment but MiniKit failed, still consider it potentially installed
-        installed = isWorldApp
-      }
-      
-      console.log('📱 Final installation status:', installed)
-      
-      // Update state with detection results
-      setState(prev => ({
-        ...prev,
-        isInstalled: installed,
-        isReady: installed,
-        isLoading: false,
-        // Keep existing connection if we had one
-        isConnected: prev.isConnected || false,
-        userAddress: prev.userAddress,
-        user: prev.user
-      }))
-
-      if (installed) {
-        console.log('✅ WorldCoin MiniKit detected - Running inside World App!')
-      } else {
-        console.log('❌ Running in browser - MiniKit not available')
-        console.log('📱 Please open this app in World App to use WorldCoin features')
-        // Only clear storage if we're definitely not in World App AND have no valid session
-        if (!isWorldApp && !loadFromStorage(STORAGE_KEYS.WORLDCOIN_SESSION)) {
-          clearStorage()
-        }
-      }
-    }
-
-    initializeWorldCoin()
-  }, [])
-
-  // Add effect to listen for storage changes (for cross-tab synchronization)
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.CONNECTION_STATE) {
-        const wasConnected = e.newValue ? JSON.parse(e.newValue) : false
-        if (wasConnected) {
-          // Another tab connected, sync the state
-          const savedSession = loadFromStorage(STORAGE_KEYS.WORLDCOIN_SESSION)
-          const savedUserData = loadFromStorage(STORAGE_KEYS.USER_DATA)
-          
-          if (savedSession && savedUserData) {
-            console.log('🔄 Syncing connection state from another tab...')
-            setState(prev => ({
-              ...prev,
-              isConnected: true,
-              userAddress: savedSession.address,
-              user: savedUserData
-            }))
-          }
-        } else {
-          // Another tab disconnected
+        if (isMounted) {
           setState(prev => ({
             ...prev,
-            isConnected: false,
-            userAddress: undefined,
-            user: undefined
+            isLoading: false,
+            isInstalled: false,
+            isReady: false,
+            isConnected: false
           }))
         }
       }
     }
 
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
+    const detectMiniKitEnvironment = async () => {
+      try {
+        if (!isMounted) return
+        
+        // Improved World App detection with safe checks
+        const isWorldApp = typeof window !== 'undefined' && typeof navigator !== 'undefined' && (
+          navigator.userAgent.includes('WorldApp') || 
+          navigator.userAgent.includes('World App') ||
+          navigator.userAgent.includes('worldcoin') ||
+          window.location.hostname.includes('worldcoin') ||
+          window.location.hostname.includes('worldapp') ||
+          // Check for MiniKit global object
+          typeof (window as any).MiniKit !== 'undefined'
+        )
+        
+        console.log('🌍 Is World App environment (improved detection):', isWorldApp)
+        
+        // Wait for MiniKit to initialize (shorter wait)
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        if (!isMounted) return
+        
+        // Check if MiniKit is installed with proper error handling
+        let installed = false
+        try {
+          // Safe MiniKit check
+          if (typeof MiniKit !== 'undefined' && MiniKit.isInstalled) {
+            installed = MiniKit.isInstalled()
+            console.log('📱 MiniKit.isInstalled():', installed)
+          } else {
+            console.log('📱 MiniKit not available')
+            installed = isWorldApp // Fallback to environment detection
+          }
+        } catch (error) {
+          console.log('📱 MiniKit.isInstalled() failed:', error)
+          // If we're in a World App environment but MiniKit failed, still consider it potentially installed
+          installed = isWorldApp
+        }
+        
+        console.log('📱 Final installation status:', installed)
+        
+        // Update state with detection results
+        if (isMounted) {
+          setState(prev => ({
+            ...prev,
+            isInstalled: installed,
+            isReady: installed,
+            isLoading: false,
+            // Keep existing connection if we had one
+            isConnected: prev.isConnected || false,
+            userAddress: prev.userAddress,
+            user: prev.user
+          }))
+        }
+
+        if (installed) {
+          console.log('✅ WorldCoin MiniKit detected - Running inside World App!')
+        } else {
+          console.log('❌ Running in browser - MiniKit not available')
+          console.log('📱 Please open this app in World App to use WorldCoin features')
+          // Only clear storage if we're definitely not in World App AND have no valid session
+          if (!isWorldApp && !loadFromStorage(STORAGE_KEYS.WORLDCOIN_SESSION)) {
+            clearStorage()
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error detecting MiniKit environment:', error)
+        if (isMounted) {
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            isInstalled: false,
+            isReady: false
+          }))
+        }
+      }
+    }
+
+    initializeWorldCoin()
+    
+    // Cleanup function
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // Add effect to listen for storage changes (for cross-tab synchronization)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      try {
+        if (e.key === STORAGE_KEYS.CONNECTION_STATE) {
+          const wasConnected = e.newValue ? JSON.parse(e.newValue) : false
+          if (wasConnected) {
+            // Another tab connected, sync the state
+            const savedSession = loadFromStorage(STORAGE_KEYS.WORLDCOIN_SESSION)
+            const savedUserData = loadFromStorage(STORAGE_KEYS.USER_DATA)
+            
+            if (savedSession && savedUserData) {
+              console.log('🔄 Syncing connection state from another tab...')
+              setState(prev => ({
+                ...prev,
+                isConnected: true,
+                userAddress: savedSession.address,
+                user: savedUserData
+              }))
+            }
+          } else {
+            // Another tab disconnected
+            setState(prev => ({
+              ...prev,
+              isConnected: false,
+              userAddress: undefined,
+              user: undefined
+            }))
+          }
+        }
+      } catch (error) {
+        console.warn('Error handling storage change:', error)
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange)
+      return () => window.removeEventListener('storage', handleStorageChange)
+    }
   }, [])
 
   // Add effect to periodically check and maintain connection

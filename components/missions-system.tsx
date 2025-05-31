@@ -305,39 +305,50 @@ export function MissionsSystem() {
   useEffect(() => {
     console.log('🔄 Loading missions and stats from localStorage...')
     
-    // Load saved missions
-    const savedMissions = localStorage.getItem('swapquest_missions')
-    if (savedMissions) {
-      try {
-        const parsedMissions = JSON.parse(savedMissions)
-        console.log('✅ Loaded saved missions:', parsedMissions.length, 'missions')
-        // Validate that the missions have the correct structure
-        if (Array.isArray(parsedMissions) && parsedMissions.length > 0) {
-          setMissions(parsedMissions)
-        } else {
-          console.log('⚠️ Invalid missions data, using default missions')
+    try {
+      // Load saved missions with better error handling
+      const savedMissions = typeof window !== 'undefined' && window.localStorage 
+        ? localStorage.getItem('swapquest_missions') 
+        : null
+        
+      if (savedMissions) {
+        try {
+          const parsedMissions = JSON.parse(savedMissions)
+          console.log('✅ Loaded saved missions:', parsedMissions.length, 'missions')
+          // Validate that the missions have the correct structure
+          if (Array.isArray(parsedMissions) && parsedMissions.length > 0) {
+            setMissions(parsedMissions)
+          } else {
+            console.log('⚠️ Invalid missions data, using default missions')
+          }
+        } catch (error) {
+          console.error('❌ Error parsing saved missions:', error)
+          console.log('🔄 Using default missions due to parse error')
         }
-      } catch (error) {
-        console.error('❌ Error loading saved missions:', error)
-        console.log('🔄 Using default missions due to parse error')
+      } else {
+        console.log('📝 No saved missions found, using default missions')
       }
-    } else {
-      console.log('📝 No saved missions found, using default missions')
-    }
-    
-    // Load saved stats
-    const savedStats = localStorage.getItem('swapquest_stats')
-    if (savedStats) {
-      try {
-        const parsedStats = JSON.parse(savedStats)
-        console.log('✅ Loaded saved stats:', parsedStats)
-        // Validate stats structure
-        if (parsedStats && typeof parsedStats === 'object') {
-          setUserStats(parsedStats)
+      
+      // Load saved stats with better error handling
+      const savedStats = typeof window !== 'undefined' && window.localStorage 
+        ? localStorage.getItem('swapquest_stats') 
+        : null
+        
+      if (savedStats) {
+        try {
+          const parsedStats = JSON.parse(savedStats)
+          console.log('✅ Loaded saved stats:', parsedStats)
+          // Validate stats structure
+          if (parsedStats && typeof parsedStats === 'object') {
+            setUserStats(parsedStats)
+          }
+        } catch (error) {
+          console.error('❌ Error parsing saved stats:', error)
         }
-      } catch (error) {
-        console.error('❌ Error loading saved stats:', error)
       }
+    } catch (error) {
+      console.error('❌ Error loading from localStorage:', error)
+      // Continue with default values if localStorage fails
     }
   }, []) // Empty dependency array - only run on mount
 
@@ -393,6 +404,11 @@ export function MissionsSystem() {
     try {
       let result: any = null
 
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        throw new Error('Esta aplicación debe ejecutarse en un navegador')
+      }
+
       if (!isInstalled) {
         // NO SIMULATION - Must use World App
         toast.error('Esta aplicación DEBE abrirse en World App para realizar misiones reales')
@@ -403,39 +419,66 @@ export function MissionsSystem() {
       if (!isConnected) {
         // Try to restore connection first
         console.log('🔄 Wallet not connected, attempting to restore connection...')
-        const connectionResult = await checkConnection()
-        
-        if (!connectionResult) {
-          toast.error('Debes conectar tu wallet de WorldCoin primero')
+        try {
+          const connectionResult = await checkConnection()
+          
+          if (!connectionResult) {
+            toast.error('Debes conectar tu wallet de WorldCoin primero')
+            setIsExecuting(false)
+            return
+          }
+        } catch (connectionError) {
+          console.error('Connection check failed:', connectionError)
+          toast.error('Error verificando conexión del wallet')
           setIsExecuting(false)
           return
         }
       }
 
-      // Execute REAL mission based on type
+      // Execute REAL mission based on type with better error handling
       switch (mission.type) {
         case 'pay':
           console.log('💰 Executing REAL payment mission...')
-          result = await depositFunds(mission.minAmount || '1', 'WLD')
+          try {
+            result = await depositFunds(mission.minAmount || '1', 'WLD')
+          } catch (payError) {
+            console.error('Payment mission failed:', payError)
+            throw new Error(`Error en pago: ${payError instanceof Error ? payError.message : 'Error desconocido'}`)
+          }
           break
           
         case 'verify':
           console.log('🔐 Executing REAL WorldID verification...')
-          result = await verifyWithWorldID()
+          try {
+            result = await verifyWithWorldID()
+          } catch (verifyError) {
+            console.error('Verification mission failed:', verifyError)
+            throw new Error(`Error en verificación: ${verifyError instanceof Error ? verifyError.message : 'Error desconocido'}`)
+          }
           break
           
         case 'send_transaction':
           console.log('📤 Executing REAL send transaction...')
-          result = await sendTransaction({
-            to: mission.targetAddress || '0x742d35Cc6634C0532925a3b8D20Eb0d8f4C2f35f',
-            value: '1000000000000000', // 0.001 ETH
-          })
+          try {
+            result = await sendTransaction({
+              to: mission.targetAddress || '0x742d35Cc6634C0532925a3b8D20Eb0d8f4C2f35f',
+              value: '1000000000000000', // 0.001 ETH
+            })
+          } catch (txError) {
+            console.error('Transaction mission failed:', txError)
+            throw new Error(`Error en transacción: ${txError instanceof Error ? txError.message : 'Error desconocido'}`)
+          }
           break
           
         case 'sign_message':
           console.log('✍️ Executing REAL message signing...')
-          // Use the new signMessage function
-          result = await signMessage(mission.message || 'SwapQuest Gaming Platform - Message Signature')
+          try {
+            // Use the new signMessage function
+            result = await signMessage(mission.message || 'SwapQuest Gaming Platform - Message Signature')
+          } catch (signError) {
+            console.error('Sign message mission failed:', signError)
+            throw new Error(`Error firmando mensaje: ${signError instanceof Error ? signError.message : 'Error desconocido'}`)
+          }
           break
           
         case 'swap':
@@ -448,12 +491,17 @@ export function MissionsSystem() {
             console.error('Swap mission failed:', swapError)
             // If swap fails, try a simplified payment approach
             console.log('🔄 Fallback: Using payment for swap mission...')
-            result = await depositFunds(mission.minAmount || '0.01', 'WLD')
+            try {
+              result = await depositFunds(mission.minAmount || '0.01', 'WLD')
+            } catch (fallbackError) {
+              console.error('Fallback payment also failed:', fallbackError)
+              throw new Error(`Error en swap: ${swapError instanceof Error ? swapError.message : 'Error desconocido'}`)
+            }
           }
           break
           
         default:
-          throw new Error(`Unknown mission type: ${mission.type}`)
+          throw new Error(`Tipo de misión desconocido: ${mission.type}`)
       }
 
       if (result && result.success) {
@@ -479,10 +527,12 @@ export function MissionsSystem() {
         
         // Save to localStorage immediately with error handling
         try {
-          localStorage.setItem('swapquest_missions', JSON.stringify(updatedMissions))
-          localStorage.setItem('swapquest_stats', JSON.stringify(newStats))
-          localStorage.setItem('knowledgePoints', newStats.knowledgePoints.toString())
-          console.log('✅ Mission progress saved to localStorage')
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('swapquest_missions', JSON.stringify(updatedMissions))
+            localStorage.setItem('swapquest_stats', JSON.stringify(newStats))
+            localStorage.setItem('knowledgePoints', newStats.knowledgePoints.toString())
+            console.log('✅ Mission progress saved to localStorage')
+          }
         } catch (saveError) {
           console.error('❌ Error saving mission progress:', saveError)
           toast.error('Error guardando progreso - puede perderse al recargar')
