@@ -150,15 +150,15 @@ export function MissionsSystem() {
     },
     {
       id: 'large_payment',
-      title: 'Pago Mediano',
-      description: 'Realiza un pago de $1 usando WorldCoin',
+      title: 'Pago Pequeño',
+      description: 'Realiza un pago de $0.10 usando WorldCoin',
       type: 'pay',
       difficulty: 'Medio',
       reward: 150,
       xpReward: 300,
       knowledgePoints: 75,
       status: 'available',
-      minAmount: '1',
+      minAmount: '0.1',
       icon: Coins,
       category: 'payments'
     },
@@ -220,7 +220,7 @@ export function MissionsSystem() {
       xpReward: 200,
       knowledgePoints: 50,
       status: 'available',
-      minAmount: '0.5',
+      minAmount: '0.1',
       swapFrom: 'USDC',
       swapTo: 'WLD',
       swapFromAddress: '0x79A02482A880bCE3F13e09Da970dC34db4CD24d1', // USDC en World Chain
@@ -239,7 +239,7 @@ export function MissionsSystem() {
       xpReward: 180,
       knowledgePoints: 45,
       status: 'available',
-      minAmount: '0.1',
+      minAmount: '0.01',
       swapFrom: 'WLD',
       swapTo: 'ETH',
       swapFromAddress: '0x163f8C2467924be0ae7B5347228CABF260318753', // WLD en World Chain
@@ -250,15 +250,15 @@ export function MissionsSystem() {
     },
     {
       id: 'large_swap',
-      title: 'Swap de $1',
-      description: 'Realiza un swap de $1 usando cualquier par de tokens',
+      title: 'Swap de $0.10',
+      description: 'Realiza un swap de $0.10 usando cualquier par de tokens',
       type: 'swap',
       difficulty: 'Medio',
       reward: 200,
       xpReward: 400,
       knowledgePoints: 80,
       status: 'available',
-      minAmount: '1',
+      minAmount: '0.1',
       swapFrom: 'USDC',
       swapTo: 'WLD',
       swapFromAddress: '0x79A02482A880bCE3F13e09Da970dC34db4CD24d1', // USDC en World Chain
@@ -269,15 +269,15 @@ export function MissionsSystem() {
     },
     {
       id: 'arbitrage_swap',
-      title: 'Swap de 0.2 WLD',
-      description: 'Realiza un swap con 0.2 WLD para practicar trading',
+      title: 'Swap de 0.05 WLD',
+      description: 'Realiza un swap con 0.05 WLD para practicar trading',
       type: 'swap',
       difficulty: 'Medio',
       reward: 300,
       xpReward: 600,
       knowledgePoints: 120,
       status: 'available',
-      minAmount: '0.2',
+      minAmount: '0.05',
       swapFrom: 'WLD',
       swapTo: 'USDC',
       swapFromAddress: '0x163f8C2467924be0ae7B5347228CABF260318753', // WLD en World Chain
@@ -486,16 +486,38 @@ export function MissionsSystem() {
           try {
             // Use simplified swap parameters that work with WorldCoin MiniKit
             const swapParams = getSwapParamsForMission(mission)
+            console.log('🔄 Swap parameters:', swapParams)
+            console.log(`🔄 Swapping ${mission.swapFrom} to ${mission.swapTo}`)
+            
             result = await executeSwap(swapParams)
+            
+            if (result && result.success) {
+              console.log('✅ REAL Swap completed successfully!')
+              console.log('📊 Swap details:', {
+                from: mission.swapFrom,
+                to: mission.swapTo,
+                amount: mission.minAmount,
+                transactionHash: result.transactionHash
+              })
+            } else {
+              throw new Error('Swap transaction failed - no success result')
+            }
           } catch (swapError) {
-            console.error('Swap mission failed:', swapError)
-            // If swap fails, try a simplified payment approach
-            console.log('🔄 Fallback: Using payment for swap mission...')
-            try {
-              result = await depositFunds(mission.minAmount || '0.01', 'WLD')
-            } catch (fallbackError) {
-              console.error('Fallback payment also failed:', fallbackError)
-              throw new Error(`Error en swap: ${swapError instanceof Error ? swapError.message : 'Error desconocido'}`)
+            console.error('❌ REAL Swap mission failed:', swapError)
+            
+            // DO NOT FALLBACK TO PAYMENT - This was causing transfers instead of swaps!
+            // Instead, provide clear error message about swap failure
+            const errorMessage = swapError instanceof Error ? swapError.message : 'Error desconocido en swap'
+            
+            // Check if it's a specific MiniKit error that we can handle
+            if (errorMessage.includes('User rejected') || errorMessage.includes('cancelled')) {
+              throw new Error('Swap cancelado por el usuario')
+            } else if (errorMessage.includes('insufficient')) {
+              throw new Error('Fondos insuficientes para realizar el swap')
+            } else if (errorMessage.includes('slippage')) {
+              throw new Error('Slippage demasiado alto - intenta con una cantidad menor')
+            } else {
+              throw new Error(`Error en swap real: ${errorMessage}`)
             }
           }
           break
@@ -554,11 +576,10 @@ export function MissionsSystem() {
 
   // Helper function to get swap parameters for different missions
   const getSwapParamsForMission = (mission: Mission) => {
-    // World Chain token addresses
-    const ETH = '0x0000000000000000000000000000000000000000'
-    const WETH = '0x4200000000000000000000000000000000000006'
-    const WLD = '0x163f8C2467924be0ae7B5347228CABF260318753'
-    const USDC = '0x79A02482A880bCE3F13e09Da970dC34db4CD24d1'
+    // Use mission-specific addresses if available, otherwise fallback to defaults
+    const tokenIn = mission.swapFromAddress || '0x0000000000000000000000000000000000000000'
+    const tokenOut = mission.swapToAddress || '0x163f8C2467924be0ae7B5347228CABF260318753'
+    const fee = mission.poolFee || 3000
     
     // Convert mission amounts to wei/smallest units
     const parseAmount = (amount: string, tokenSymbol: string): string => {
@@ -567,69 +588,56 @@ export function MissionsSystem() {
       return Math.floor(amountNum * Math.pow(10, decimals)).toString()
     }
     
-    // Calculate minimum output (simplified)
+    // Calculate minimum output with better slippage protection
     const calculateMinOutput = (inputAmount: string, fromToken: string, toToken: string): string => {
+      // More realistic exchange rates for World Chain
       const rates: Record<string, Record<string, number>> = {
-        'ETH': { 'WLD': 2000, 'USDC': 3000 },
-        'WLD': { 'ETH': 0.0005, 'USDC': 1.5 },
-        'USDC': { 'ETH': 0.00033, 'WLD': 0.67 }
+        'ETH': { 'WLD': 1500, 'USDC': 2800 }, // 1 ETH = ~1500 WLD, ~2800 USDC
+        'WLD': { 'ETH': 0.00067, 'USDC': 1.8 }, // 1 WLD = ~0.00067 ETH, ~1.8 USDC
+        'USDC': { 'ETH': 0.00036, 'WLD': 0.56 } // 1 USDC = ~0.00036 ETH, ~0.56 WLD
       }
       
       const rate = rates[fromToken]?.[toToken] || 1
-      const estimatedOutput = parseFloat(inputAmount) * rate * 0.95 // 5% slippage
+      const estimatedOutput = parseFloat(inputAmount) * rate * 0.97 // 3% slippage tolerance
       const decimals = toToken === 'USDC' ? 6 : 18
       return Math.floor(estimatedOutput * Math.pow(10, decimals)).toString()
     }
     
-    switch (mission.id) {
-      case 'first_swap':
-        return {
-          tokenIn: ETH,
-          tokenOut: WLD,
-          amountIn: parseAmount('0.001', 'ETH'),
-          amountOutMinimum: calculateMinOutput('0.001', 'ETH', 'WLD'),
-          fee: 3000
-        }
-      case 'usdc_wld_swap':
-        return {
-          tokenIn: USDC,
-          tokenOut: WLD,
-          amountIn: parseAmount('0.5', 'USDC'),
-          amountOutMinimum: calculateMinOutput('0.5', 'USDC', 'WLD'),
-          fee: 3000
-        }
-      case 'wld_eth_swap':
-        return {
-          tokenIn: WLD,
-          tokenOut: ETH,
-          amountIn: parseAmount('0.1', 'WLD'),
-          amountOutMinimum: calculateMinOutput('0.1', 'WLD', 'ETH'),
-          fee: 3000
-        }
-      case 'large_swap':
-        return {
-          tokenIn: USDC,
-          tokenOut: WLD,
-          amountIn: parseAmount('1', 'USDC'),
-          amountOutMinimum: calculateMinOutput('1', 'USDC', 'WLD'),
-          fee: 3000
-        }
-      case 'arbitrage_swap':
-        return {
-          tokenIn: WLD,
-          tokenOut: USDC,
-          amountIn: parseAmount('0.2', 'WLD'),
-          amountOutMinimum: calculateMinOutput('0.2', 'WLD', 'USDC'),
-          fee: 500
-        }
-      default:
-        return {
-          tokenIn: ETH,
-          tokenOut: WLD,
-          amountIn: parseAmount('0.001', 'ETH'),
-          amountOutMinimum: calculateMinOutput('0.001', 'ETH', 'WLD'),
-          fee: 3000
-        }
+    // Get token symbols from addresses
+    const getTokenSymbol = (address: string): string => {
+      const tokenMap: Record<string, string> = {
+        '0x0000000000000000000000000000000000000000': 'ETH',
+        '0x4200000000000000000000000000000000000006': 'ETH', // WETH
+        '0x163f8C2467924be0ae7B5347228CABF260318753': 'WLD',
+        '0x79A02482A880bCE3F13e09Da970dC34db4CD24d1': 'USDC'
+      }
+      return tokenMap[address] || 'ETH'
+    }
+    
+    const fromTokenSymbol = getTokenSymbol(tokenIn)
+    const toTokenSymbol = getTokenSymbol(tokenOut)
+    const amountIn = parseAmount(mission.minAmount || '0.001', fromTokenSymbol)
+    const amountOutMinimum = calculateMinOutput(mission.minAmount || '0.001', fromTokenSymbol, toTokenSymbol)
+    
+    console.log('🔄 Swap parameters for mission:', {
+      missionId: mission.id,
+      fromToken: fromTokenSymbol,
+      toToken: toTokenSymbol,
+      tokenIn,
+      tokenOut,
+      amountIn,
+      amountOutMinimum,
+      fee,
+      minAmount: mission.minAmount
+    })
+    
+    return {
+      tokenIn,
+      tokenOut,
+      amountIn,
+      amountOutMinimum,
+      fee,
+      recipient: undefined // Will use connected wallet address
     }
   }
 
