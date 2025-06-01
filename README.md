@@ -385,7 +385,6 @@ function MyComponent() {
 ### **Custom Hooks**
 - `useWorldCoin()`: WorldCoin MiniKit integration
 - `useSwapQuest()`: Game mechanics and missions
-- `useArenaBalance()`: Token balance management
 - `useTokenSwap()`: DEX integration for swaps
 
 ### **Component Structure**

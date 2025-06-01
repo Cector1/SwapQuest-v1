@@ -26,7 +26,6 @@ export const CONTRACT_ADDRESSES = {
 export const SWAP_QUEST_ABI = [
   "function missions(uint256) view returns (tuple(uint256 id, address fromToken, address toToken, uint256 fromAmount, uint256 requiredSwaps, uint256 rewardAmount, bool isActive, uint256 expiryTime))",
   "function userProgress(address, uint256) view returns (tuple(uint256 completedSwaps, uint256 lastSwapTime, bool claimed))",
-  "function userArenaBalance(address) view returns (uint256)",
   "function recordSwap(uint256 missionId, address user, uint256 amountSwapped)",
   "function claimRewards()",
   "function getMission(uint256 missionId) view returns (tuple(uint256 id, address fromToken, address toToken, uint256 fromAmount, uint256 requiredSwaps, uint256 rewardAmount, bool isActive, uint256 expiryTime))",

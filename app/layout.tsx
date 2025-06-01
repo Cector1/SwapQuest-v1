@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { WldBalanceProvider } from '@/hooks/useArenaBalance';
 import { WorldCoinAuthHeader } from '@/components/worldcoin-auth-header';
 import { Toaster } from 'sonner';
 import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
@@ -90,17 +89,15 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-x-hidden`}>
         <ErrorBoundary>
           <MiniKitProvider>
-            <WldBalanceProvider>
-              <div className="min-h-screen">
-                <WorldCoinAuthHeader />
-                {children}
-              </div>
-              <Toaster 
-                position="top-center"
-                theme="light"
-                richColors
-              />
-            </WldBalanceProvider>
+            <div className="min-h-screen">
+              <WorldCoinAuthHeader />
+              {children}
+            </div>
+            <Toaster 
+              position="top-center"
+              theme="light"
+              richColors
+            />
           </MiniKitProvider>
         </ErrorBoundary>
       </body>
