@@ -18,11 +18,11 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SwapQuest - WorldCoin x AVAX Gaming",
-  description: "WorldCoin MiniApp for Gaming DApp on Avalanche Fuji with Real Swaps",
+  title: "SwapQuest - WorldCoin Gaming",
+  description: "WorldCoin MiniApp for Gaming DeFi Platform with Real Swaps",
   applicationName: "SwapQuest",
   authors: [{ name: "SwapQuest Team" }],
-  keywords: ["worldcoin", "miniapp", "avalanche", "defi", "gaming", "crypto", "swap"],
+  keywords: ["worldcoin", "miniapp", "defi", "gaming", "crypto", "swap"],
   manifest: "/manifest.json",
   themeColor: "#1616b4",
   colorScheme: "light",
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "SwapQuest",
-    title: "SwapQuest - WorldCoin x AVAX Gaming",
-    description: "WorldCoin MiniApp for Gaming DApp on Avalanche Fuji with Real Swaps",
+    title: "SwapQuest - WorldCoin Gaming",
+    description: "WorldCoin MiniApp for Gaming DeFi Platform with Real Swaps",
     images: [
       {
         url: "/og-image.png",
@@ -52,8 +52,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SwapQuest - WorldCoin x AVAX Gaming",
-    description: "WorldCoin MiniApp for Gaming DApp on Avalanche Fuji with Real Swaps",
+    title: "SwapQuest - WorldCoin Gaming",
+    description: "WorldCoin MiniApp for Gaming DeFi Platform with Real Swaps",
     images: ["/og-image.png"],
   },
   appleWebApp: {

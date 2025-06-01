@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   const manifest = {
-    name: 'SwapQuest - WorldCoin x AVAX Gaming',
+    name: 'SwapQuest - WorldCoin Gaming',
     short_name: 'SwapQuest',
-    description: 'WorldCoin MiniApp for Gaming DApp on Avalanche Fuji with Real Swaps',
+    description: 'WorldCoin MiniApp for Gaming DeFi Platform',
     start_url: '/',
     display: 'standalone',
     background_color: '#1616b4', // Ethereum Blue
-    theme_color: '#f7931a', // Bitcoin Orange
+    theme_color: '#1616b4',
     orientation: 'portrait',
     scope: '/',
     icons: [

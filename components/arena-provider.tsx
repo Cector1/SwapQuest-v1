@@ -45,8 +45,8 @@ export function ArenaProvider({ children }: ArenaProviderProps) {
         const arenaConfig = {
           projectId: process.env.NEXT_PUBLIC_ARENA_PROJECT_ID || "demo-project-id",
           metadata: {
-            name: "AVAX Arena Gaming Platform",
-            description: "A blockchain gaming platform focused on AVAX ecosystem",
+            name: "WorldCoin Gaming Platform",
+            description: "A blockchain gaming platform powered by WorldCoin",
             url: typeof window !== 'undefined' ? window.location.href : 'https://localhost:3000',
             icons: ["https://your-app.com/icon.png"]
           }

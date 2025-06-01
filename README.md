@@ -236,9 +236,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ for the Avalanche ecosystem**
 
-# SwapQuest - WorldCoin x AVAX Gaming 🌍⚡
+# SwapQuest - WorldCoin Gaming 🌍⚡
 
-A **WorldCoin MiniApp** built on **Avalanche Fuji** that combines DeFi gaming with WorldID verification for a secure and engaging crypto experience.
+A **WorldCoin MiniApp** that combines DeFi gaming with WorldID verification for a secure and engaging crypto experience.
 
 ## 🌟 What's New - WorldCoin Integration
 

@@ -217,7 +217,7 @@ export function ArenaSdkDemo() {
 
       {/* Arena SDK Info */}
       <div className="text-xs text-zinc-500 border-t border-zinc-800 pt-4">
-        <p>Arena SDK v1.0.0 - Integration demo for AVAX Gaming Platform</p>
+        <p>Arena SDK v1.0.0 - Integration demo for WorldCoin Gaming Platform</p>
         <p>This component demonstrates Arena SDK wallet integration, user profiles, and transactions.</p>
       </div>
     </div>
